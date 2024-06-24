@@ -1,32 +1,34 @@
-// controllers/testEmailController.js
-import Template from "../../model/Template/index.js";
 import { sendEmail } from "../../Services/EmailService.js";
 
 export const sendTestEmailController = async (req, res) => {
-  const { senderEmail, templateId } = req.body;
+  const senderEmail = process.env.DEFAULT_SENDER_EMAIL; // Replace with the actual sender email set in your backend
+
+  // Destructure subject, body, owner, and tags from req.body
+  const { subject, body, owner, tags } = req.body;
+
+  if (!subject || !body) {
+    return res.status(400).json({ msg: 'Please provide subject and body' });
+  }
 
   try {
-    // Retrieve the template
-    const template = await Template.findById(templateId);
-    if (!template) {
-      return res.status(404).json({ msg: 'Template not found' });
-    }
-
-    // Prepare the test email message
     const msg = {
       from: senderEmail,
-      to: senderEmail,
-      subject: template.subject,
-      text: `${template.body}\n\nOwner: ${template.owner}\nTags: ${template.tags}`,
-      html: `${template.body}<br><br>Owner: ${template.owner}<br>Tags: ${template.tags}`,
+      to: senderEmail, // Sending email to the sender for testing purpose
+      subject: subject,
+      text: body, // Default to body only
+      html: body, // Default to body only
     };
 
-    // Send the test email
+    if (owner || tags) {
+      msg.text += `\n\nOwner: ${owner || ''}\nTags: ${tags || ''}`;
+      msg.html += `<br><br>Owner: ${owner || ''}<br>Tags: ${tags || ''}`;
+    }
+
     await sendEmail(msg);
 
     res.json({ msg: 'Test email sent successfully' });
   } catch (err) {
-    console.error(err.message);
+    console.error('Error sending test email:', err.message);
     res.status(500).send('Server error');
   }
 };
