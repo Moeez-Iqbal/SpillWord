@@ -1,5 +1,4 @@
-// import EmailMainContent from "./eMailComponents/emailMainComponents";
-
+// Import necessary components
 import React, { useState } from "react";
 import EmailMainContent from "./eMailComponents/emailMainComponents";
 import EmailTemplate from "./template";
@@ -8,8 +7,7 @@ import { TiChartBarOutline } from "react-icons/ti";
 
 function Email() {
   const [selectedEmail, setSelectedEmail] = useState(null);
-  const [option, setOption] = useState("");
-  const [boolean, setBoolean] = useState(true);
+  const [option, setOption] = useState("allEmails"); // Update initial state
 
   return (
     <>
@@ -22,25 +20,26 @@ function Email() {
                 <ul className="flex">
                   <li className="mb-2 hover:bg-blue-200 rounded ">
                     <button
-                      className="text-blue-500  "
-                      onClick={() => setBoolean(true)}
+                      className="text-blue-500"
+                      onClick={() => setOption("allEmails")}
                     >
                       All emails
                     </button>
                   </li>
                   <li className="mb-2 ml-4 hover:bg-blue-200 rounded">
                     <button
-                      onClick={() => setBoolean(false)}
-                      className="text-blue-500 "
+                      className="text-blue-500"
+                      onClick={() => setOption("templates")}
                     >
                       Templates
                     </button>
                   </li>
+                 
                 </ul>
               </div>
               <div>
                 <button className="border border-blue-500 text-blue-500 py-1 px-2 text-lg rounded flex items-center space-x-2 hover:bg-blue-200">
-                <TiChartBarOutline />
+                  <TiChartBarOutline />
                   <span>Deliverable Stats</span>
                 </button>
               </div>
@@ -49,26 +48,24 @@ function Email() {
         </div>
         {/* //Second Div  */}
 
-        <div className="flex ">
-          {boolean ? (
-            <>
-              <div className="flex" style={{ width: "80rem" }}>
-                <FilterTemplate />
-                <EmailMainContent />
-              </div>
-            </>
-          ) : (
-            <>
-              <div
-                className="w-full  border overflow-hidden relative"
-                style={{ height: "40rem" }}
-              >
-                <div className="w-full h-full overflow-y-scroll p-4 box-border">
-                  <EmailTemplate />
-                </div>
-              </div>
-            </>
+        <div className="flex">
+          {option === "allEmails" && (
+            <div className="flex" style={{ width: "80rem" }}>
+              <FilterTemplate />
+              <EmailMainContent />
+            </div>
           )}
+          {option === "templates" && (
+            <div
+              className="w-full border overflow-hidden relative"
+              style={{ height: "40rem" }}
+            >
+              <div className="w-full h-full overflow-y-scroll p-4 box-border">
+                <EmailTemplate />
+              </div>
+            </div>
+          )}
+          
         </div>
       </div>
     </>
