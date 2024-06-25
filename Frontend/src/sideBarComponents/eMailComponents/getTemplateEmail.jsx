@@ -10,7 +10,7 @@ const GetTemplateEmail = () => {
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/gettempelate'); // Corrected endpoint URL
+                const response = await axios.get('http://localhost:3003/gettemplates'); // Corrected endpoint URL
                 setEmails(response.data);
             } catch (error) {
                 console.error('Error fetching templates:', error);

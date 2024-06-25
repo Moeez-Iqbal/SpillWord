@@ -47,7 +47,7 @@ const EmailTemplate = () => {
       formDataToSend.append("userId", formData.userId);
 
       const response = await axios.post(
-        `http://localhost:3000/create`,
+        `http://localhost:3003/create`,
         formDataToSend,
         {
           headers: {
@@ -83,7 +83,7 @@ const EmailTemplate = () => {
         msg.html = body;
       }
 
-      await axios.post(`http://localhost:3000/sendTestEmail`, msg);
+      await axios.post(`http://localhost:3003/sendTestEmail`, msg);
       setShowEmailPopup(true);
     } catch (err) {
       console.error("Error sending test email:", err);
