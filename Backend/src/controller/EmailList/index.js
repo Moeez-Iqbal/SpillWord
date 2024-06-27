@@ -40,7 +40,7 @@ export const getEmailLists = async (req, res) => {
       if (sequence) filter.sequence = sequence;
       if (lastActivity) filter.lastActivity = new Date(lastActivity);  
       if (emailSent) filter.emailSent = emailSent === 'true';  
-      if (emailClicked) filter.emailClicked = emailClicked === 'true';  
+      // if (emailClicked) filter.emailClicked = emailClicked === 'true';  
       if (emailReplied) filter.emailReplied = emailReplied === 'true';  
       if (emailMeetingSet) filter.emailMeetingSet = emailMeetingSet === 'true';  
       if (emailBounced) filter.emailBounced = emailBounced === 'true';  
