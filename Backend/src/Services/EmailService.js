@@ -50,7 +50,8 @@ export const sendBulkEmails = async ({ emails, templateId, senderEmail, ccEmails
 
     for (const email of emails) {
       const msg = {
-        from: senderEmail,
+        from: process.env.SMTP_USER, // Use authenticated SMTP user
+        replyTo: senderEmail, // Set reply-to to user's email
         to: email,
         cc: ccEmails,
         bcc: bccEmails,
