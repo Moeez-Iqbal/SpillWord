@@ -18,15 +18,15 @@ const GetTemplateEmail = () => {
     );
   };
 
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const response = await axios.get("http://localhost:3002/gettemplates"); // Corrected endpoint URL
-        setEmails(response.data);
-      } catch (error) {
-        console.error("Error fetching templates:", error);
-      }
-    };
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const response = await axios.get('http://localhost:3003/gettempelate'); // Corrected endpoint URL
+                setEmails(response.data);
+            } catch (error) {
+                console.error('Error fetching templates:', error);
+            }
+        };
 
     fetchTemplates();
   }, []); // Empty dependency array to fetch data once when component mounts
