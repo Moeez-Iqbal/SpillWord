@@ -5,15 +5,15 @@ import { Disclosure } from "@headlessui/react";
 import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/solid";
 import {
   MdEmail,
-  MdPerson,
   MdList,
   MdDateRange,
   MdError,
   MdBusiness,
 } from "react-icons/md";
+import EmailTemplatePopUp from "./emailTemplate"; // Import the popup component
 
 function PeopleSearch() {
-  const [selectedEmail, setSelectedEmail] = useState(null);
+  const [selectedEmails, setSelectedEmails] = useState([]);
   const [emailList, setEmailList] = useState([]);
   const [filter, setFilter] = useState({
     Listname: "",
@@ -27,114 +27,89 @@ function PeopleSearch() {
     sequence: "",
     lastActivity: "",
     emailSent: "",
+    emailClicked: "",
+    emailReplied: "",
+    emailMeetingSet: "",
+    emailBounced: "",
+    list: "",
+    emailStatus: "",
+    notSentReason: "",
+    company: "",
   });
-  const [selectedEmails, setSelectedEmails] = useState([]);
+  const [filterOptions, setFilterOptions] = useState({
+    lists: [],
+    emailStatusOptions: [],
+    notSentReasonOptions: [],
+    companies: [],
+    countries: [],
+    industries: [],
+  });
+  const [isPopupOpen, setIsPopupOpen] = useState(false); // Manage popup state
 
   const emailOptions = [
-    { value: "email1@example.com", label: "email1@example.com" },
-    { value: "email2@example.com", label: "email2@example.com" },
-    { value: "email3@example.com", label: "email3@example.com" },
+    { value: "email1@example.com", label: "Email 1" },
+    { value: "email2@example.com", label: "Email 2" },
+    { value: "email3@example.com", label: "Email 3" },
   ];
 
-  const sections = [
-    {
-      title: "From Email",
-      icon: <MdEmail className="mr-2" />,
-      content: (
-        <Select
-          options={emailOptions}
-          value={selectedEmail}
-          onChange={(selectedOption) => {
-            setSelectedEmail(selectedOption);
-            handleFilterChange("emailSent", selectedOption?.value || "");
-          }}
-          placeholder="Specify email..."
-        />
-      ),
-      filterKey: "emailSent",
-    },
-    {
-      title: "Persona",
-      icon: <MdPerson className="mr-2" />,
-      content: (
-        <Select
-          options={[]} /* Replace with persona options */
-          value={filter.persona}
-          onChange={(selectedOption) =>
-            handleFilterChange("persona", selectedOption)
-          }
-          placeholder="Select persona..."
-        />
-      ),
-      filterKey: "persona",
-    },
-    {
-      title: "Lists",
-      icon: <MdList className="mr-2" />,
-      content: (
-        <Select
-          options={[]} /* Replace with list options */
-          value={filter.list}
-          onChange={(selectedOption) =>
-            handleFilterChange("list", selectedOption)
-          }
-          placeholder="Select list..."
-        />
-      ),
-      filterKey: "list",
-    },
-    {
-      title: "Email Status",
-      icon: <MdDateRange className="mr-2" />,
-      content: (
-        <Select
-          options={[]} /* Replace with email status options */
-          value={filter.emailStatus}
-          onChange={(selectedOption) =>
-            handleFilterChange("emailStatus", selectedOption)
-          }
-          placeholder="Select email status..."
-        />
-      ),
-      filterKey: "emailStatus",
-    },
-    {
-      title: "Not Sent Reason",
-      icon: <MdError className="mr-2" />,
-      content: (
-        <Select
-          options={[]} /* Replace with not sent reason options */
-          value={filter.notSentReason}
-          onChange={(selectedOption) =>
-            handleFilterChange("notSentReason", selectedOption)
-          }
-          placeholder="Select not sent reason..."
-        />
-      ),
-      filterKey: "notSentReason",
-    },
-    {
-      title: "Companies",
-      icon: <MdBusiness className="mr-2" />,
-      content: (
-        <Select
-          options={[]} /* Replace with company options */
-          value={filter.company}
-          onChange={(selectedOption) =>
-            handleFilterChange("company", selectedOption)
-          }
-          placeholder="Select company..."
-        />
-      ),
-      filterKey: "company",
-    },
-  ];
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const [
+          listsRes,
+          emailStatusRes,
+          notSentReasonRes,
+          companiesRes,
+          countryRes,
+          industryRes,
+        ] = await Promise.all([
+          axios.get("http://localhost:3002/getemail", {
+            params: { company: filter.company },
+          }),
+          axios.get("http://localhost:3002/email-status"),
+          axios.get("http://localhost:3002/not-sent-reasons"),
+          axios.get("http://localhost:3002/unique-companies"),
+          axios.get("http://localhost:3002/getmail", {
+            params: { industry: filter.industry },
+          }),
+        ]);
+
+        setFilterOptions({
+          lists: listsRes.data,
+          emailStatusOptions: emailStatusRes.data,
+          notSentReasonOptions: notSentReasonRes.data,
+          companies: companiesRes.data.map((company) => ({
+            value: company,
+            label: company,
+          })),
+          countries: countryRes.data.map((country) => ({
+            value: country,
+            label: country,
+          })),
+          industries: industryRes.data.map((industry) => ({
+            value: industry,
+            label: industry,
+          })),
+        });
+      } catch (error) {
+        console.error("Error fetching filter options:", error);
+      }
+    };
+
+    fetchFilterOptions();
+  }, [filter.company, filter.industry]);
 
   const fetchData = async () => {
     try {
+      const { company, Listname, ...restFilters } = filter;
       const response = await axios.get("http://localhost:3002/getemail", {
-        params: filter,
+        params: {
+          company: company,
+          Listname: Listname,
+          ...restFilters,
+        },
       });
+      console.log("getmail", response.data);
       setEmailList(response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -150,30 +125,118 @@ function PeopleSearch() {
   };
 
   const toggleSelectEmail = (email) => {
-    if (selectedEmails.includes(email)) {
-      setSelectedEmails(selectedEmails.filter((e) => e !== email));
-    } else {
-      setSelectedEmails([...selectedEmails, email]);
-    }
+    setSelectedEmails((prevSelected) => {
+      if (prevSelected.includes(email)) {
+        return prevSelected.filter((e) => e !== email);
+      } else {
+        return [...prevSelected, email];
+      }
+    });
   };
 
   const handleSendClick = () => {
     if (selectedEmails.length > 0) {
-      const toEmails = selectedEmails.join(';');
-      window.location.href = `mailto:${toEmails}`;
+      setIsPopupOpen(true); // Open the popup
     } else {
-      alert('Please select at least one email to send.');
+      alert("Please select at least one email to send.");
     }
   };
+
+  const sections = [
+    {
+      title: "From Email",
+      icon: <MdEmail className="mr-2" />,
+      content: (
+        <Select
+          options={[{ value: "", label: "Select email..." }, ...emailOptions]}
+          value={selectedEmails.map((email) => ({
+            value: email,
+            label: email,
+          }))}
+          isMulti
+          onChange={(selectedOptions) => {
+            const selectedEmails = selectedOptions.map(
+              (option) => option.value
+            );
+            setSelectedEmails(selectedEmails);
+            handleFilterChange("emailSent", selectedEmails.join(","));
+          }}
+          placeholder="Specify email..."
+        />
+      ),
+      filterKey: "emailSent",
+    },
+    {
+      title: "Lists",
+      icon: <MdList className="mr-2" />,
+      content: (
+        <Select
+          options={filterOptions.lists.map((l) => ({ value: l, label: l }))}
+          value={filter.list}
+          onChange={(selectedOption) =>
+            handleFilterChange("list", selectedOption?.value || "")
+          }
+          placeholder="Select list..."
+        />
+      ),
+      filterKey: "list",
+    },
+    {
+      title: "Country",
+      icon: <MdDateRange className="mr-2" />,
+      content: (
+        <Select
+          options={filterOptions.countries}
+          value={filter.country}
+          onChange={(selectedOption) =>
+            handleFilterChange("country", selectedOption?.value || "")
+          }
+          placeholder="Select country..."
+        />
+      ),
+      filterKey: "country",
+    },
+    {
+      title: "Industry",
+      icon: <MdError className="mr-2" />,
+      content: (
+        <Select
+          options={filterOptions.industries}
+          value={filter.industry}
+          onChange={(selectedOption) =>
+            handleFilterChange("industry", selectedOption?.value || "")
+          }
+          placeholder="Select industry..."
+        />
+      ),
+      filterKey: "industry",
+    },
+    {
+      title: "Companies",
+      icon: <MdBusiness className="mr-2" />,
+      content: (
+        <Select
+          options={filterOptions.companies}
+          value={filter.company}
+          onChange={(selectedOption) =>
+            handleFilterChange("company", selectedOption?.value || "")
+          }
+          placeholder="Type to search companies..."
+          onInputChange={(inputValue) =>
+            handleFilterChange("company", inputValue)
+          }
+        />
+      ),
+      filterKey: "company",
+    },
+  ];
 
   return (
     <>
       <div className="w-screen h-screen bg-gray-100">
         <div className="flex">
-          {/* Sidebar with Filters */}
           <div className="w-1/4 bg-white shadow-md p-4 mx-4 my-6 rounded">
             <h3 className="font-bold text-lg mb-4">Filters</h3>
-            {/* Filter sections */}
             {sections.map((section, index) => (
               <Disclosure key={index}>
                 {({ open }) => (
@@ -197,7 +260,6 @@ function PeopleSearch() {
               </Disclosure>
             ))}
           </div>
-          {/* Main Content Area */}
           <div className="flex-1 p-4">
             <div className="flex justify-end mb-4">
               <button
@@ -217,7 +279,6 @@ function PeopleSearch() {
               </button>
             </div>
             <div className="bg-white rounded-md border border-gray-300 p-4">
-              {/* Display email list */}
               {emailList.length === 0 ? (
                 <div className="text-center text-gray-500">
                   No emails found.
@@ -225,14 +286,17 @@ function PeopleSearch() {
               ) : (
                 <ul className="divide-y divide-gray-200">
                   {emailList.map((email, index) => (
-                    <li key={index} className="flex items-center space-x-4 p-2">
+                    <li key={email._id} className="py-2 flex items-center">
                       <input
+                        key={email._id}
                         type="checkbox"
-                        className="form-checkbox h-6 w-6 text-blue-500"
-                        checked={selectedEmails.includes(email.email)}
-                        onChange={() => toggleSelectEmail(email.email)}
+                        className="mr-2"
+                        checked={selectedEmails.includes(email._id)}
+                        onChange={() => toggleSelectEmail(email._id)}
                       />
-                      <span>{email.Listname} - {email.email}</span>
+                      <div className="flex-1">
+                        {email.Listname}: {email.email}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -241,6 +305,22 @@ function PeopleSearch() {
           </div>
         </div>
       </div>
+      {/* Render the popup component if open */}
+      {isPopupOpen && (
+        <EmailTemplatePopUp
+          selectedEmails={selectedEmails.map((emailId) => {
+            const selectedEmail = emailList.find(
+              (email) => email._id === emailId
+            );
+            return {
+              value: selectedEmail.email, // Assuming you want to use the email address as value and label
+              label: selectedEmail.email,
+            };
+          })}
+          userEmailAddress={filter.name}
+          onClose={() => setIsPopupOpen(false)}
+        />
+      )}
     </>
   );
 }

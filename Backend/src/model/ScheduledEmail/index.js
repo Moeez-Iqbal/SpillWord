@@ -13,8 +13,7 @@ const ScheduledEmailSchema = new mongoose.Schema({
   },
   templateId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Template',
-    required: true,
+    ref: 'Template'
   },
   scheduledAt: {
     type: Date,

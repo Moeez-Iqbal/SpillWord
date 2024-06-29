@@ -1,8 +1,8 @@
 import ScheduledEmail from '../model/ScheduledEmail/index.js';
-import { sendBulkEmails } from './EmailService.js'
+import { sendBulkEmails } from './EmailService.js';
 import moment from 'moment-timezone';
 
-export const scheduleEmail = async (senderEmail, emailAddresses, templateId, scheduledAt, timeZone) => {
+export const scheduleEmail = async (senderEmail, emailAddresses, templateId, scheduledAt, timeZone, subject, body, attachments, ccEmails = [], bccEmails = []) => {
   const localDateTime = moment.tz(scheduledAt, timeZone);
   const utcScheduledAt = localDateTime.utc().toDate();
 
@@ -12,7 +12,12 @@ export const scheduleEmail = async (senderEmail, emailAddresses, templateId, sch
     templateId,
     scheduledAt: utcScheduledAt,
     timeZone,
+    subject,
+    body,
+    attachments,
     status: 'scheduled',
+    ccEmails,
+    bccEmails,
   });
 
   await scheduledEmail.save();
@@ -32,7 +37,16 @@ const scheduleEmails = async () => {
 
   for (const scheduledEmail of scheduledEmails) {
     if (scheduledEmail.scheduledAt <= new Date()) {
-      await sendBulkEmails(scheduledEmail.emailAddresses, scheduledEmail.templateId, scheduledEmail.senderEmail);
+      await sendBulkEmails({
+        emails: scheduledEmail.emailAddresses,
+        templateId: scheduledEmail.templateId,
+        senderEmail: scheduledEmail.senderEmail,
+        ccEmails: scheduledEmail.ccEmails,
+        bccEmails: scheduledEmail.bccEmails,
+        subject: scheduledEmail.subject,
+        body: scheduledEmail.body,
+        attachments: scheduledEmail.attachments,
+      });
       await updateScheduledEmailStatus(scheduledEmail._id, 'sent');
     }
   }

@@ -1,10 +1,13 @@
-import User from "../../model/User/index.js";// Assuming UserModel is defined in a separate file
+import User from "../../model/User/index.js";
 
-// Controller function for creating a new user
 export const createUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    const user = new User({ name, email, password });
+    const { name, email, password, credits } = req.body;
+    const user = new User({ name, email, password, credits });
+
+    // Initialize remaining emails based on credits
+    user.remainingEmails = credits * 100; // Assuming 1 credit = 100 emails
+
     await user.save();
     res.status(201).json(user);
   } catch (error) {
