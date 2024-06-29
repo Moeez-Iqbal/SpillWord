@@ -8,8 +8,9 @@ const UserSchema = new mongoose.Schema({
   delivered: { type: Number, default: 0 },
   opened: { type: Number, default: 0 },
   clicked: { type: Number, default: 0 },
-  credits: { type: Number }, // Adjust based on user's purchased credits
-  remainingEmails: { type: Number }, // Initialize remaining emails based on credits
+  credits: { type: Number, default: 0 }, // Adjust based on user's purchased credits
+  remainingEmails: { type: Number, default: 0 }, // Initialize remaining emails based on credits
+  subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription' },
 });
 
 const User = mongoose.model('User', UserSchema);

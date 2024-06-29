@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import Template from '../model/Template/index.js';
 import User from '../model/User/index.js';
 import path from 'path';
+import pLimit from 'p-limit';
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendEmail = async (msg) => {
+const sendEmail = async (msg) => {
   try {
     const info = await transporter.sendMail(msg);
     return { success: true, messageId: info.messageId };
@@ -25,7 +26,7 @@ export const sendEmail = async (msg) => {
   }
 };
 
-export const sendBulkEmails = async ({ emails, templateId, senderEmail, ccEmails = [], bccEmails = [], subject, body, attachments = [] }) => {
+const sendBulkEmails = async ({ emails, templateId, senderEmail, ccEmails = [], bccEmails = [], subject, body, attachments = [] }) => {
   try {
     let template;
     let user;
@@ -46,9 +47,16 @@ export const sendBulkEmails = async ({ emails, templateId, senderEmail, ccEmails
       throw new Error(`User not found for email: ${senderEmail}`);
     }
 
-    const attachmentPaths = attachments.map(file => ({ path: file }));
+    const attachmentPaths = attachments.map(file => ({ path: path.resolve(file) }));
 
-    for (const email of emails) {
+    if (template && template.file) {
+      attachmentPaths.push({ path: path.resolve(template.file) });
+    }
+
+    const limit = pLimit(6); // Limit to 6 concurrent emails (recommended hourly limit)
+    const delay = 600000; // 600 seconds delay between batches (recommended delay)
+
+    const emailPromises = emails.map(email => limit(async () => {
       const msg = {
         from: process.env.SMTP_USER, // Use authenticated SMTP user
         replyTo: senderEmail, // Set reply-to to user's email
@@ -77,9 +85,20 @@ export const sendBulkEmails = async ({ emails, templateId, senderEmail, ccEmails
       }
 
       await user.save();
+      return result;
+    }));
+
+    // Execute email promises in batches with delay
+    for (let i = 0; i < emailPromises.length; i += 6) {
+      await Promise.all(emailPromises.slice(i, i + 6));
+      if (i + 6 < emailPromises.length) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
   } catch (error) {
     console.error('Error in sendBulkEmails:', error);
     throw error; // Propagate the error to handle it further up the call stack
   }
 };
+
+export { sendEmail, sendBulkEmails };
