@@ -14,4 +14,4 @@ app.use(json());
 app.use(bodyParser.json());
 app.use(cors())
 app.use(allRouter);
-app.listen(3003, () => console.log("Server Is Running on Port 3003"));
+app.listen(3002, () => console.log("Server Is Running on Port 3003"));
