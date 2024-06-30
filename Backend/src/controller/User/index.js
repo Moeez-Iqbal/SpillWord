@@ -4,23 +4,39 @@ import Subscription from '../../model/Subscription/index.js';
 // Function to create a new user with subscription
 export const createUser = async (req, res) => {
   try {
-    const { name, email, password, subscriptionType, startDate, endDate } = req.body;
+    const { name, email, password, subscriptionType, subscriptionInterval, startDate } = req.body;
 
     // Determine initial credits based on subscription type
     let initialCredits = 0;
-    if (subscriptionType === 'Basic') {
+    if (subscriptionType === 'Starter') {
       initialCredits = 1;
-    } else if (subscriptionType === 'Premium') {
+    } else if (subscriptionType === 'Standard') {
       initialCredits = 3;
+    } else if (subscriptionType === 'Plus') {
+      initialCredits = 5;
     } else {
       return res.status(400).json({ msg: 'Invalid subscription type' });
     }
 
-    // Calculate initial remaining emails based on initial credits
-    const initialRemainingEmails = initialCredits * 100;
+    // Validate subscription interval
+    if (!['monthly', 'yearly'].includes(subscriptionInterval)) {
+      return res.status(400).json({ msg: 'Invalid subscription interval' });
+    }
+
+    // Calculate initial email count based on initial credits
+    const initialEmails = initialCredits * 100;
+
+    // Calculate end date based on subscription interval
+    const start = new Date(startDate);
+    let endDate;
+    if (subscriptionInterval === 'monthly') {
+      endDate = new Date(start.setMonth(start.getMonth() + 1));
+    } else if (subscriptionInterval === 'yearly') {
+      endDate = new Date(start.setFullYear(start.getFullYear() + 1));
+    }
 
     // Create the user
-    const user = new User({ name, email, password, credits: initialCredits, remainingEmails: initialRemainingEmails });
+    const user = new User({ name, email, password, credits: initialCredits, remainingEmails: initialEmails });
 
     // Save the user
     await user.save();
@@ -29,8 +45,9 @@ export const createUser = async (req, res) => {
     const subscription = new Subscription({
       userId: user._id,
       type: subscriptionType,
+      interval: subscriptionInterval,
       startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      endDate,
       credits: initialCredits,
     });
 
@@ -65,7 +82,7 @@ export const updateCreditsAndEmails = async (req, res) => {
 
     // Update credits and remaining emails
     const convertedCredits = additionalCredits * 100; // Convert additional credits to emails
-    user.credits += convertedCredits;
+    user.credits += additionalCredits;
     user.remainingEmails += convertedCredits;
 
     await user.save();
