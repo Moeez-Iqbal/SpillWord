@@ -21,8 +21,7 @@ export const getEmailLists = async (req, res) => {
     const {
       Listname, industry, country, city, name, timezone,
       totalYearsOfExperience, timeInCurrentRole, sequence,
-      lastActivity, company, emailSent, emailClicked,
-      emailReplied, emailMeetingSet, emailBounced
+      lastActivity, company
     } = req.query;
 
     // Constructing filter object based on provided parameters
@@ -38,11 +37,6 @@ export const getEmailLists = async (req, res) => {
     if (sequence) filter.sequence = sequence;
     if (lastActivity) filter.lastActivity = new Date(lastActivity);
     if (company) filter.company = company;
-    if (emailSent) filter.emailSent = emailSent === 'true';
-    if (emailClicked) filter.emailClicked = emailClicked === 'true';
-    if (emailReplied) filter.emailReplied = emailReplied === 'true';
-    if (emailMeetingSet) filter.emailMeetingSet = emailMeetingSet === 'true';
-    if (emailBounced) filter.emailBounced = emailBounced === 'true';
 
     // Retrieving email lists based on the constructed filter
     const emailLists = await EmailList.find(filter);

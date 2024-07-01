@@ -3,7 +3,7 @@ import fs from 'fs';
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const folder = req.body.folder || 'default'; // Use default folder name if 'folder' is undefined
+    const folder = req.body.folder || 'default'; // Default folder name if not provided
     const dir = `uploads/${folder}`;
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);

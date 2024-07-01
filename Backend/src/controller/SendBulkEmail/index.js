@@ -1,18 +1,19 @@
-import moment from 'moment-timezone';
+// sendBulkEmailsController.js
+import multer from 'multer';
+import path from 'path';
 import Template from '../../model/Template/index.js';
-import Batch from '../../model/Batch/index.js';
+import User from '../../model/User/index.js';
 import { sendBulkEmails } from '../../Services/EmailService.js';
 import { scheduleEmail } from '../../Services/ScheduledEmail.js';
-import User from '../../model/User/index.js';
+import Batch from '../../model/Batch/index.js';
+import moment from 'moment-timezone';
 import upload from '../../middleware/multer/index.js';
-import multer from 'multer'; // Ensure this path is correct
 
-// Function to calculate required credits based on number of emails to send
+
 const calculateRequiredCredits = (emailsToSend) => {
-  return Math.ceil(emailsToSend / 100); // Example: 1 credit per 100 emails
+  return Math.ceil(emailsToSend / 100);
 };
 
-// Function to deduct credits and update remaining emails for a user
 const deductCreditsAndUpdateEmails = async (user, totalEmailsToSend) => {
   user.remainingEmails -= totalEmailsToSend;
 
@@ -28,27 +29,28 @@ const deductCreditsAndUpdateEmails = async (user, totalEmailsToSend) => {
   await user.save();
 };
 
-// Controller to send or schedule bulk emails
-export const sendBulkEmailsController = async (req, res) => {
-  const { senderEmail, selectedEmails, templateId, scheduledAt, timeZone, subject, body, ccEmails, bccEmails } = req.body;
+export const sendBulkEmailsController = (req, res) => {
+  upload.array('attachments', 10)(req, res, async (err) => {
+    console.log('Received request body:', req.body);
+    console.log('Received files:', req.body.attachments);
 
-  try {
-    // Validate selected emails
-    if (!selectedEmails || selectedEmails.length === 0) {
-      return res.status(400).json({ msg: 'No email addresses selected' });
+    if (err instanceof multer.MulterError) {
+      console.error('Multer Error:', err);
+      return res.status(500).json({ msg: 'Error uploading files', error: err.message });
+    } else if (err) {
+      console.error('Unknown Error:', err);
+      return res.status(500).json({ msg: 'Unknown error uploading files', error: err.message });
     }
 
-    // Handle file upload using multer middleware
-    upload.single('attachments')(req, res, async (err) => {
-      if (err instanceof multer.MulterError) {
-        return res.status(500).json({ msg: 'Error uploading file' });
-      } else if (err) {
-        return res.status(500).json({ msg: 'Error uploading file' });
+    try {
+      const { senderEmail, selectedEmails, templateId, scheduledAt, timeZone, subject, body, ccEmails, bccEmails } = req.body;
+
+      if (!selectedEmails || selectedEmails.length === 0) {
+        return res.status(400).json({ msg: 'No email addresses selected' });
       }
 
-      const attachments = req.file ? [req.file.path] : [];
-
-      // Find the template based on templateId if provided
+      const attachments = req.files ? req.files.map(file => file.path) : [];
+      
       let template;
       if (templateId) {
         template = await Template.findById(templateId).exec();
@@ -57,41 +59,38 @@ export const sendBulkEmailsController = async (req, res) => {
         }
       }
 
-      // Fetch user based on senderEmail
       const user = await User.findOne({ email: senderEmail }).exec();
       if (!user) {
         return res.status(404).json({ msg: 'User not found' });
       }
 
-      // Calculate required credits based on total emails to send
       const totalEmailsToSend = selectedEmails.length;
       const requiredCredits = calculateRequiredCredits(totalEmailsToSend);
 
-      // Check if user has sufficient credits
       if (user.credits < requiredCredits) {
         return res.status(400).json({ msg: 'Insufficient credits' });
       }
 
-      // Proceed with sending or scheduling emails
       if (scheduledAt && timeZone) {
-        // Schedule email logic
         const scheduledDateTime = moment.tz(scheduledAt, timeZone);
         const scheduledAtUTC = scheduledDateTime.utc().toDate();
 
         try {
-          const scheduledEmail = await scheduleEmail(senderEmail, selectedEmails, templateId, scheduledAtUTC, timeZone, subject, body, attachments, ccEmails, bccEmails);
+          const emailSubject = subject || (template ? template.subject : '');
+          const emailBody = body || (template ? template.body : '');
+          const emailAttachments = attachments;
 
-          // Create batch for scheduled emails
+          const scheduledEmail = await scheduleEmail(senderEmail, selectedEmails, templateId, scheduledAtUTC, timeZone, emailSubject, emailBody, emailAttachments, ccEmails, bccEmails);
+
           const batch = new Batch({
             senderEmail,
-            emailAddresses: selectedEmails,
+            emailAddresses: selectedEmails.map(email => email.address),
             templateId,
             sentAt: scheduledAtUTC,
           });
 
           await batch.save();
 
-          // Deduct credits and update remaining emails for the user
           await deductCreditsAndUpdateEmails(user, totalEmailsToSend);
 
           return res.json({ scheduledEmail, batch });
@@ -100,30 +99,31 @@ export const sendBulkEmailsController = async (req, res) => {
           return res.status(500).send('Error scheduling email');
         }
       } else {
-        // Send bulk emails immediately
         try {
+          const emailSubject = subject || (template ? template.subject : '');
+          const emailBody = body || (template ? template.body : '');
+          const emailAttachments = attachments;
+
           await sendBulkEmails({
-            emails: selectedEmails,
+            emails: selectedEmails.map(email => email.address),
             templateId,
             senderEmail,
             ccEmails,
             bccEmails,
-            subject,
-            body,
-            attachments,
+            subject: emailSubject,
+            body: emailBody,
+            attachments: emailAttachments,
           });
 
-          // Create batch for immediate emails
           const batch = new Batch({
             senderEmail,
-            emailAddresses: selectedEmails,
+            emailAddresses: selectedEmails.map(email => email.address),
             templateId,
             sentAt: new Date(),
           });
 
           await batch.save();
 
-          // Deduct credits and update remaining emails for the user
           await deductCreditsAndUpdateEmails(user, totalEmailsToSend);
 
           return res.json(batch);
@@ -132,9 +132,9 @@ export const sendBulkEmailsController = async (req, res) => {
           return res.status(500).send('Error sending bulk emails');
         }
       }
-    });
-  } catch (err) {
-    console.error('Server error:', err);
-    return res.status(500).send('Server error');
-  }
+    } catch (err) {
+      console.error('Server error:', err);
+      return res.status(500).send('Server error');
+    }
+  });
 };

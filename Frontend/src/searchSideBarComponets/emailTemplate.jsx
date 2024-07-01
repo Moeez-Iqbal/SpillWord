@@ -7,12 +7,10 @@ function EmailTemplatePopUp({
   userEmailAddress,
   onClose,
 }) {
-  // Initialize 'to' field with selected email labels
   const initialToField = selectedEmails.map((email) => email.label).join(", ");
 
-  // Form state with initial values
   const [formData, setFormData] = useState({
-    senderEmail: userEmailAddress, // Assuming userEmailAddress is the sender
+    senderEmail: userEmailAddress,
     selectedEmails: initialToField,
     subject: "",
     body: "",
@@ -20,14 +18,15 @@ function EmailTemplatePopUp({
     ccEmails: "",
   });
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === "attachments") {
+    console.log(e.target.value);
+    if (name == "attachments") {
       setFormData({
         ...formData,
         attachments: files,
       });
+console.log(formData);
     } else {
       setFormData({
         ...formData,
@@ -36,34 +35,29 @@ function EmailTemplatePopUp({
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // Log to verify 'to' field before sending
-      console.log("Sending emails to:", formData.selectedEmails);
-
-      // POST request to backend API endpoint
       const response = await axios.post(
-        "http://localhost:3002/sendBulkEmails",
-        formData
+        "http://localhost:3003/sendBulkEmails",
+        {
+          ...formData,
+          selectedEmails: selectedEmails.map((email) => ({
+            address: email.label,
+          })), // Ensure selectedEmails is in the expected format
+        }
       );
 
-      // Log success response
       console.log("Emails sent successfully:", response.data);
 
-      // Close the popup after successful submission
       onClose();
     } catch (error) {
-      // Handle errors from axios request
       console.error("Error sending emails:", error);
 
-      // Handle specific error responses
       if (error.response) {
         console.error("Response data:", error.response.data);
         console.error("Response status:", error.response.status);
-        // Example: Display user-friendly error message based on response
         alert("Failed to send emails. Please try again later.");
       } else if (error.request) {
         console.error("Request made but no response received:", error.request);
@@ -85,7 +79,6 @@ function EmailTemplatePopUp({
           <div className="space-y-4">
             <h1 className="text-2xl font-bold">New Template</h1>
 
-            {/* From (name) input */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 From:
@@ -94,13 +87,11 @@ function EmailTemplatePopUp({
                 type="text"
                 name="senderEmail"
                 value={formData.senderEmail}
-                onChange={handleChange}
+                onChange={(e)=>{handleChange(e)}}
                 className="w-full p-2 border border-gray-300 rounded-md"
-                // readOnly // Assuming userEmailAddress is not editable
               />
             </div>
 
-            {/* To input */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 To:
@@ -109,13 +100,12 @@ function EmailTemplatePopUp({
                 type="text"
                 name="selectedEmails"
                 value={formData.selectedEmails}
-                onChange={handleChange}
+                onChange={(e)=>{handleChange(e)}}
                 className="w-full p-2 border border-gray-300 rounded-md"
-                required // Ensure 'to' is required
+                required
               />
             </div>
 
-            {/* File (attachment) input */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 File:
@@ -123,13 +113,12 @@ function EmailTemplatePopUp({
               <input
                 type="file"
                 name="attachments"
-                onChange={handleChange}
+                onChange={(e)=>{handleChange(e)}}
                 className="w-full p-2 border border-gray-300 rounded-md"
-                multiple // Allow multiple file selection
+                multiple
               />
             </div>
 
-            {/* CC input */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 CC:
@@ -138,12 +127,11 @@ function EmailTemplatePopUp({
                 type="text"
                 name="ccEmails"
                 value={formData.ccEmails}
-                onChange={handleChange}
+                onChange={(e)=>{handleChange(e)}}
                 className="w-full p-2 border border-gray-300 rounded-md"
               />
             </div>
 
-            {/* Subject input */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Subject:
@@ -152,14 +140,13 @@ function EmailTemplatePopUp({
                 type="text"
                 name="subject"
                 value={formData.subject}
-                onChange={handleChange}
+                onChange={(e)=>{handleChange(e)}}
                 className="w-full p-2 border border-gray-300 rounded-md"
                 style={{ width: "34rem" }}
-                required // Ensure 'subject' is required
+                required
               />
             </div>
 
-            {/* Body textarea */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Body:
@@ -167,19 +154,18 @@ function EmailTemplatePopUp({
               <textarea
                 name="body"
                 value={formData.body}
-                onChange={handleChange}
+                onChange={(e)=>{handleChange(e)}}
                 className="w-full p-2 border border-gray-300 rounded-md h-32"
                 style={{ width: "34rem", height: "24rem" }}
-                required // Ensure 'body' is required
+                required
               ></textarea>
             </div>
 
-            {/* Buttons */}
             <div className="flex justify-end mt-6 space-x-4">
               <button
                 type="button"
                 className="px-6 py-2 bg-gray-200 rounded-md"
-                onClick={onClose} // Close the popup on Cancel
+                onClick={onClose}
               >
                 Cancel
               </button>

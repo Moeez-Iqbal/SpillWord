@@ -1,5 +1,6 @@
 import ScheduledEmail from '../model/ScheduledEmail/index.js';
 import { sendBulkEmails } from './EmailService.js';
+import { sendEmail } from './EmailService.js';
 import moment from 'moment-timezone';
 
 export const scheduleEmail = async (senderEmail, emailAddresses, templateId, scheduledAt, timeZone, subject, body, attachments, ccEmails = [], bccEmails = []) => {
@@ -33,22 +34,27 @@ export const updateScheduledEmailStatus = async (id, status) => {
 };
 
 const scheduleEmails = async () => {
-  const scheduledEmails = await getScheduledEmails();
+  try {
+    const scheduledEmails = await getScheduledEmails();
 
-  for (const scheduledEmail of scheduledEmails) {
-    if (scheduledEmail.scheduledAt <= new Date()) {
-      await sendBulkEmails({
-        emails: scheduledEmail.emailAddresses,
-        templateId: scheduledEmail.templateId,
-        senderEmail: scheduledEmail.senderEmail,
-        ccEmails: scheduledEmail.ccEmails,
-        bccEmails: scheduledEmail.bccEmails,
-        subject: scheduledEmail.subject,
-        body: scheduledEmail.body,
-        attachments: scheduledEmail.attachments,
-      });
-      await updateScheduledEmailStatus(scheduledEmail._id, 'sent');
+    for (const scheduledEmail of scheduledEmails) {
+      if (scheduledEmail.scheduledAt <= new Date()) {
+        await sendBulkEmails({
+          emails: scheduledEmail.emailAddresses,
+          templateId: scheduledEmail.templateId,
+          senderEmail: scheduledEmail.senderEmail,
+          ccEmails: scheduledEmail.ccEmails,
+          bccEmails: scheduledEmail.bccEmails,
+          subject: scheduledEmail.subject,
+          body: scheduledEmail.body,
+          attachments: scheduledEmail.attachments,
+        });
+        await updateScheduledEmailStatus(scheduledEmail._id, 'sent');
+      }
     }
+  } catch (error) {
+    console.error('Error scheduling emails:', error);
+    // Handle error appropriately, such as logging or sending notifications
   }
 };
 

@@ -63,13 +63,13 @@ function PeopleSearch() {
           countryRes,
           industryRes,
         ] = await Promise.all([
-          axios.get("http://localhost:3002/getemail", {
+          axios.get("http://localhost:3003/getemail", {
             params: { company: filter.company },
           }),
-          axios.get("http://localhost:3002/email-status"),
-          axios.get("http://localhost:3002/not-sent-reasons"),
-          axios.get("http://localhost:3002/unique-companies"),
-          axios.get("http://localhost:3002/getmail", {
+          axios.get("http://localhost:3003/email-status"),
+          axios.get("http://localhost:3003/not-sent-reasons"),
+          axios.get("http://localhost:3003/unique-companies"),
+          axios.get("http://localhost:3003/getmail", {
             params: { industry: filter.industry },
           }),
         ]);
@@ -102,7 +102,7 @@ function PeopleSearch() {
   const fetchData = async () => {
     try {
       const { company, Listname, ...restFilters } = filter;
-      const response = await axios.get("http://localhost:3002/getemail", {
+      const response = await axios.get("http://localhost:3003/getemail", {
         params: {
           company: company,
           Listname: Listname,

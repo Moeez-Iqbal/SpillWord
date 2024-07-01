@@ -1,9 +1,14 @@
+// Services/EmailService.js
+
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import Template from '../model/Template/index.js';
 import User from '../model/User/index.js';
 import path from 'path';
 import pLimit from 'p-limit';
+import upload from '../middleware/multer/index.js';
+import multer from 'multer';
+
 
 dotenv.config();
 
@@ -71,6 +76,7 @@ const sendBulkEmails = async ({ emails, templateId, senderEmail, ccEmails = [], 
 
       const result = await sendEmail(msg);
 
+      // Update template and user in a sequential manner
       if (template) {
         template.totalEmails = (template.totalEmails || 0) + 1;
         if (result.success) {
@@ -83,8 +89,8 @@ const sendBulkEmails = async ({ emails, templateId, senderEmail, ccEmails = [], 
       if (result.success) {
         user.delivered = (user.delivered || 0) + 1;
       }
-
       await user.save();
+
       return result;
     }));
 
