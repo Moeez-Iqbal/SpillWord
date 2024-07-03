@@ -13,6 +13,7 @@ import {
 
 function FilterTemplate() {
   const [selectedEmail, setSelectedEmail] = useState(null);
+  const [openSectionIndex, setOpenSectionIndex] = useState(null); // Track which section is open
 
   const emailOptions = [
     { value: "email1@example.com", label: "email1@example.com" },
@@ -36,29 +37,63 @@ function FilterTemplate() {
     {
       title: "Sequences",
       icon: <AiOutlineFile className="w-5 h-5 text-blue-500" />,
-      content: <p>Sequence content here...</p>,
+      content: (
+        <input
+          type="text"
+          className="w-full px-2 py-2 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Enter sequence..."
+        />
+      ),
     },
     {
       title: "Contact Lists",
       icon: <AiOutlineTeam className="w-5 h-5 text-blue-500" />,
-      content: <p>Contact list content here...</p>,
+      content: (
+        <input
+          type="text"
+          className="w-full px-2 py-2 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Enter Contact Lists..."
+        />
+      ),
     },
     {
       title: "Date Range",
       icon: <AiOutlineCalendar className="w-5 h-5 text-blue-500" />,
-      content: <p>Date range content here...</p>,
+      content: (
+        <input
+          type="text"          
+          className="w-full px-2 py-2 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Enter date range..."
+        />
+      ),
     },
     {
       title: "Not Sent Reason",
       icon: <AiOutlineUser className="w-5 h-5 text-blue-500" />,
-      content: <p>Not sent reason content here...</p>,
+      content: (
+        <input
+          type="text"
+          className="w-full px-2 py-2 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Not Sent Reason"
+        />
+      ),
     },
     {
       title: "Email Opened",
       icon: <AiOutlineSearch className="w-5 h-5 text-blue-500" />,
-      content: <p>Email opened content here...</p>,
+      content: (
+        <input
+          type="text"
+          className="w-full px-2 py-2 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Email Opened"
+        />
+      ),
     },
   ];
+
+  const toggleSection = (index) => {
+    setOpenSectionIndex((prevIndex) => (prevIndex === index ? null : index));
+  };
 
   return (
     <div className="flex py-3 px-3" style={{ height: "36rem" }}>
@@ -84,30 +119,30 @@ function FilterTemplate() {
               />
             </div>
             {sections.map((section, index) => (
-              <Disclosure
+              <div
                 key={index}
-                as="div"
                 className="mb-4 border border-gray-300 rounded-md"
               >
-                {({ open }) => (
-                  <>
-                    <Disclosure.Button className="flex justify-between items-center w-full px-4 py-2 text-sm font-medium text-left text-blue-900 rounded-t-lg hover:bg-blue-200 focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75">
-                      <div className="flex items-center space-x-2">
-                        {section.icon}
-                        <span>{section.title}</span>
-                      </div>
-                      {open ? (
-                        <ChevronUpIcon className="w-5 h-5 text-blue-500" />
-                      ) : (
-                        <ChevronDownIcon className="w-5 h-5 text-blue-500" />
-                      )}
-                    </Disclosure.Button>
-                    <Disclosure.Panel className="px-4 pt-4 pb-2 text-sm text-gray-500">
-                      {section.content}
-                    </Disclosure.Panel>
-                  </>
+                <button
+                  onClick={() => toggleSection(index)}
+                  className="flex justify-between items-center w-full px-4 py-2 text-sm font-medium text-left text-blue-900 rounded-t-lg hover:bg-blue-200 focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75"
+                >
+                  <div className="flex items-center space-x-2">
+                    {section.icon}
+                    <span>{section.title}</span>
+                  </div>
+                  {openSectionIndex === index ? (
+                    <ChevronUpIcon className="w-5 h-5 text-blue-500" />
+                  ) : (
+                    <ChevronDownIcon className="w-5 h-5 text-blue-500" />
+                  )}
+                </button>
+                {openSectionIndex === index && (
+                  <div className="px-4 pt-4 pb-2 text-sm text-gray-500">
+                    {section.content}
+                  </div>
                 )}
-              </Disclosure>
+              </div>
             ))}
           </div>
         </div>
