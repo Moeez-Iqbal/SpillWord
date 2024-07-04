@@ -10,6 +10,8 @@ const UserSchema = new mongoose.Schema({
   clicked: { type: Number, default: 0 },
   credits: { type: Number, default: 0 }, // Adjust based on user's purchased credits
   remainingEmails: { type: Number, default: 0 }, // Initialize remaining emails based on credits
+  dailyEmailsSent: {type: Number,default: 0},
+  lastEmailSentDate: {type: Date,default: null},
   subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription' },
 });
 

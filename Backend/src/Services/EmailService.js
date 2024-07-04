@@ -61,49 +61,54 @@ const sendBulkEmails = async ({ emails, templateId, senderEmail, ccEmails = [], 
     const limit = pLimit(6); // Limit to 6 concurrent emails (recommended hourly limit)
     const delay = 600000; // 600 seconds delay between batches (recommended delay)
 
-    const emailPromises = emails.map(email => limit(async () => {
-      const msg = {
-        from: process.env.SMTP_USER, // Use authenticated SMTP user
-        replyTo: senderEmail, // Set reply-to to user's email
-        to: email,
-        cc: ccEmails,
-        bcc: bccEmails,
-        subject: subject || (template ? template.subject : ''),
-        text: body || (template ? `${template.body}\n\nOwner: ${template.owner}\nTags: ${template.tags.join(', ')}${template.file ? `\nAttachment: ${path.resolve(template.file)}` : ''}` : ''),
-        html: body || (template ? `${template.body}<br><br>Owner: ${template.owner}<br>Tags: ${template.tags.join(', ')}${template.file ? `<br><a href="cid:attachment">Attachment</a>` : ''}` : ''),
-        attachments: attachmentPaths.length > 0 ? attachmentPaths : undefined,
-      };
+    let totalEmailsSent = 0;
+    let totalDelivered = 0;
 
-      const result = await sendEmail(msg);
+    const sendEmailBatch = async (batch) => {
+      const results = await Promise.all(batch.map(email => limit(async () => {
+        const msg = {
+          from: process.env.SMTP_USER,
+          replyTo: senderEmail,
+          to: email,
+          cc: ccEmails,
+          bcc: bccEmails,
+          subject: subject || (template ? template.subject : ''),
+          text: body || (template ? `${template.body}\n\nOwner: ${template.owner}\nTags: ${template.tags.join(', ')}${template.file ? `\nAttachment: ${path.resolve(template.file)}` : ''}` : ''),
+          html: body || (template ? `${template.body}<br><br>Owner: ${template.owner}<br>Tags: ${template.tags.join(', ')}${template.file ? `<br><a href="cid:attachment">Attachment</a>` : ''}` : ''),
+          attachments: attachmentPaths.length > 0 ? attachmentPaths : undefined,
+        };
 
-      // Update template and user in a sequential manner
-      if (template) {
-        template.totalEmails = (template.totalEmails || 0) + 1;
-        if (result.success) {
-          template.delivered = (template.delivered || 0) + 1;
-        }
-        await template.save();
-      }
+        return sendEmail(msg);
+      })));
 
-      user.totalEmails = (user.totalEmails || 0) + 1;
-      if (result.success) {
-        user.delivered = (user.delivered || 0) + 1;
-      }
-      await user.save();
+      totalEmailsSent += results.length;
+      totalDelivered += results.filter(r => r.success).length;
+    };
 
-      return result;
-    }));
-
-    // Execute email promises in batches with delay
-    for (let i = 0; i < emailPromises.length; i += 6) {
-      await Promise.all(emailPromises.slice(i, i + 6));
-      if (i + 6 < emailPromises.length) {
+    // Process emails in batches
+    for (let i = 0; i < emails.length; i += 6) {
+      await sendEmailBatch(emails.slice(i, i + 6));
+      if (i + 6 < emails.length) {
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
+
+    // Update template and user once after all emails are sent
+    if (template) {
+      template.totalEmails = (template.totalEmails || 0) + totalEmailsSent;
+      template.delivered = (template.delivered || 0) + totalDelivered;
+      await template.save();
+    }
+
+    user.totalEmails = (user.totalEmails || 0) + totalEmailsSent;
+    user.delivered = (user.delivered || 0) + totalDelivered;
+    user.dailyEmailsSent += totalEmailsSent;
+    await user.save();
+
+    return { totalEmailsSent, totalDelivered };
   } catch (error) {
     console.error('Error in sendBulkEmails:', error);
-    throw error; // Propagate the error to handle it further up the call stack
+    throw error;
   }
 };
 

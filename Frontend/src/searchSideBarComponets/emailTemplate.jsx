@@ -77,7 +77,7 @@ console.log(formData);
       >
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <h1 className="text-2xl font-bold">New Template</h1>
+            <h1 className="text-2xl font-bold">Bulk Email</h1>
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">

@@ -6,7 +6,7 @@ export const trackOpen = async (req, res) => {
 
   try {
     const template = await Template.findById(templateId);
-    const user = await User.findById(template.userId);
+    const user = await User.findById(User.userId);
 
     if (template && user) {
       template.opened = (template.opened || 0) + 1;
